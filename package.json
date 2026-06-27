@@ -1,0 +1,25 @@
+{
+  "name": "github-pr-mcp",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "start": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "cf-typegen": "wrangler types",
+    "secret:put-token": "wrangler secret put GITHUB_TOKEN"
+  },
+  "dependencies": {
+    "@cloudflare/workerd-windows-64": "^1.20260627.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@octokit/rest": "^22.0.1",
+    "agents": "^0.17.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.105.0"
+  }
+}

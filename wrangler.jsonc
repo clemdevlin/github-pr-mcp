@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "github-pr-mcp",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-06-20",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "vars": {
+    // Comma-separated allowlist of "owner/repo" this server is allowed to touch.
+    // Example: "clemdevlin/file-router,clemdevlin/uploadkit"
+    // Required, with no wildcard support on purpose - every repo must be listed explicitly.
+    "ALLOWED_REPOS": "clemdevlin/file-router"
+  }
+}
