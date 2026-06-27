@@ -212,3 +212,87 @@ export async function listOpenPullRequests(
     url: pr.html_url,
   }));
 }
+
+export interface PullRequestFile {
+  filename: string;
+  status: string;
+  additions: number;
+  deletions: number;
+  /** Unified diff for this file. Undefined for binary files or files GitHub didn't generate a patch for. */
+  patch?: string;
+}
+
+export interface PullRequestDetails {
+  number: number;
+  title: string;
+  body: string;
+  state: string;
+  url: string;
+  head: string;
+  base: string;
+  mergeable: boolean | null;
+  mergeableState: string;
+  files: PullRequestFile[];
+}
+
+/** Fetches PR metadata plus the per-file diff, so a PR can be reviewed before merging. */
+export async function getPullRequest(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  pullNumber: number,
+): Promise<PullRequestDetails> {
+  const pr = await octokit.pulls.get({ owner, repo, pull_number: pullNumber });
+  const files = await octokit.pulls.listFiles({ owner, repo, pull_number: pullNumber });
+
+  return {
+    number: pr.data.number,
+    title: pr.data.title,
+    body: pr.data.body ?? "",
+    state: pr.data.state,
+    url: pr.data.html_url,
+    head: pr.data.head.ref,
+    base: pr.data.base.ref,
+    mergeable: pr.data.mergeable,
+    mergeableState: pr.data.mergeable_state ?? "unknown",
+    files: files.data.map((f) => ({
+      filename: f.filename,
+      status: f.status,
+      additions: f.additions,
+      deletions: f.deletions,
+      patch: f.patch,
+    })),
+  };
+}
+
+export type MergeMethod = "merge" | "squash" | "rebase";
+
+/** Merges a pull request. Surfaces GitHub's "not mergeable yet" responses as a normal result rather than throwing, since that's an expected outcome (e.g. failing checks, conflicts) rather than a bug. */
+export async function mergePullRequest(
+  octokit: Octokit,
+  owner: string,
+  repo: string,
+  pullNumber: number,
+  mergeMethod: MergeMethod = "merge",
+  commitTitle?: string,
+  commitMessage?: string,
+): Promise<{ merged: boolean; sha?: string; message: string }> {
+  try {
+    const result = await octokit.pulls.merge({
+      owner,
+      repo,
+      pull_number: pullNumber,
+      merge_method: mergeMethod,
+      commit_title: commitTitle,
+      commit_message: commitMessage,
+    });
+    return { merged: result.data.merged, sha: result.data.sha, message: result.data.message };
+  } catch (err: unknown) {
+    const e = err as { status?: number; message?: string };
+    if (e.status === 405 || e.status === 409) {
+      // Not mergeable (failing checks, conflicts, etc.) or merge conflict - expected, not a crash.
+      return { merged: false, message: e.message ?? "Pull request is not currently mergeable." };
+    }
+    throw err;
+  }
+}
