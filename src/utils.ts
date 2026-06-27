@@ -1,5 +1,6 @@
 /**
  * Utility functions for the GitHub PR MCP server
+ *
  */
 
 /**
