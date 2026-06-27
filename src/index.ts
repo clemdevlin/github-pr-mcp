@@ -10,12 +10,18 @@ import {
   commitFiles,
   createPullRequest,
   listOpenPullRequests,
+  getPullRequest,
+  mergePullRequest,
 } from "./github";
 
 interface Env {
   GITHUB_TOKEN: string;
   ALLOWED_REPOS: string;
 }
+
+// Caps how much diff text comes back per file so one huge generated file
+// (lockfiles, bundles) can't blow out the response.
+const MAX_PATCH_CHARS = 4000;
 
 // MCP SDK 1.26+ forbids reusing a server/transport instance across requests
 // (it throws to prevent cross-client response leakage), so build a fresh
@@ -141,6 +147,82 @@ function createServer(env: Env): McpServer {
           : prs.map((pr) => `#${pr.number} [${pr.head}] ${pr.title} - ${pr.url}`).join("\n");
       return {
         content: [{ type: "text", text }],
+      };
+    },
+  );
+
+  server.tool(
+    "get_pull_request",
+    "Fetches a pull request's metadata (title, body, state, mergeability) and the per-file diff, so it can be reviewed before merging.",
+    {
+      ...repoArgs,
+      pullNumber: z.number().int().describe("Pull request number"),
+    },
+    async ({ owner, repo, pullNumber }) => {
+      assertRepoAllowed(owner, repo, env.ALLOWED_REPOS);
+      const pr = await getPullRequest(octokit, owner, repo, pullNumber);
+
+      const filesText = pr.files
+        .map((f) => {
+          const patch = f.patch
+            ? f.patch.length > MAX_PATCH_CHARS
+              ? f.patch.slice(0, MAX_PATCH_CHARS) + `\n... (truncated, ${f.patch.length - MAX_PATCH_CHARS} more chars)`
+              : f.patch
+            : "(no text diff - binary file or diff too large for GitHub to generate)";
+          return `--- ${f.filename} (${f.status}, +${f.additions}/-${f.deletions}) ---\n${patch}`;
+        })
+        .join("\n\n");
+
+      const summary = [
+        `PR #${pr.number}: ${pr.title}`,
+        `${pr.head} -> ${pr.base} | state: ${pr.state} | mergeable: ${pr.mergeable ?? "unknown"} (${pr.mergeableState})`,
+        pr.url,
+        "",
+        pr.body || "(no description)",
+        "",
+        filesText,
+      ].join("\n");
+
+      return {
+        content: [{ type: "text", text: summary }],
+      };
+    },
+  );
+
+  server.tool(
+    "merge_pull_request",
+    "Merges a pull request. Returns whether the merge succeeded rather than throwing when GitHub reports the PR isn't mergeable yet (e.g. failing checks or conflicts), so that case can be handled instead of surfacing as a crash.",
+    {
+      ...repoArgs,
+      pullNumber: z.number().int().describe("Pull request number to merge"),
+      mergeMethod: z
+        .enum(["merge", "squash", "rebase"])
+        .optional()
+        .describe("Merge strategy. Defaults to 'merge' (a merge commit)."),
+      commitTitle: z.string().optional().describe("Optional custom title for the merge commit"),
+      commitMessage: z.string().optional().describe("Optional custom message for the merge commit"),
+    },
+    async ({ owner, repo, pullNumber, mergeMethod, commitTitle, commitMessage }) => {
+      assertRepoAllowed(owner, repo, env.ALLOWED_REPOS);
+      const result = await mergePullRequest(
+        octokit,
+        owner,
+        repo,
+        pullNumber,
+        mergeMethod,
+        commitTitle,
+        commitMessage,
+      );
+      return {
+        content: [
+          {
+            type: "text",
+            text: result.merged
+              ? `Merged PR #${pullNumber} as ${result.sha}`
+              : `Not merged: ${result.message}`,
+          },
+        ],
+        isError: !result.merged,
       };
     },
   );
