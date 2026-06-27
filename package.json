@@ -8,10 +8,13 @@
     "start": "wrangler dev",
     "deploy": "wrangler deploy",
     "cf-typegen": "wrangler types",
-    "secret:put-token": "wrangler secret put GITHUB_TOKEN"
+    "secret:put-token": "wrangler secret put GITHUB_TOKEN",
+    "inspector": "node --loader ts-node/esm src/inspector.ts",
+    "inspector:build": "tsc src/inspector.ts --outDir dist --moduleResolution node --module commonjs --target es2020 --esModuleInterop && node dist/inspector.js"
   },
   "dependencies": {
     "@cloudflare/workerd-windows-64": "^1.20260627.1",
+    "@modelcontextprotocol/inspector": "^0.22.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@octokit/rest": "^22.0.1",
     "agents": "^0.17.0",
@@ -19,6 +22,7 @@
   },
   "devDependencies": {
     "@types/node": "^26.0.1",
+    "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
     "wrangler": "^4.105.0"
   }
