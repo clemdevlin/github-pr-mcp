@@ -39,12 +39,16 @@ function createServer(env: Env): McpServer {
     repo: z.string().describe("Repository name, e.g. 'file-router'"),
   };
 
-  server.tool(
+  server.registerTool(
     "list_repo_files",
-    "Lists every file path in a repository at a given branch (defaults to the repo's default branch). Use this to see the project structure before reading or editing files.",
     {
-      ...repoArgs,
-      ref: z.string().optional().describe("Branch or commit SHA. Defaults to the default branch."),
+      description:
+        "Lists every file path in a repository at a given branch (defaults to the repo's default branch). Use this to see the project structure before reading or editing files.",
+      inputSchema: {
+        ...repoArgs,
+        ref: z.string().optional().describe("Branch or commit SHA. Defaults to the default branch."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async ({ owner, repo, ref }) => {
       assertRepoAllowed(owner, repo, env.ALLOWED_REPOS);
@@ -55,13 +59,16 @@ function createServer(env: Env): McpServer {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "read_file",
-    "Reads the full text content of a single file from a repository at a given ref.",
     {
-      ...repoArgs,
-      path: z.string().describe("File path relative to repo root, e.g. 'src/index.ts'"),
-      ref: z.string().optional().describe("Branch or commit SHA. Defaults to the default branch."),
+      description: "Reads the full text content of a single file from a repository at a given ref.",
+      inputSchema: {
+        ...repoArgs,
+        path: z.string().describe("File path relative to repo root, e.g. 'src/index.ts'"),
+        ref: z.string().optional().describe("Branch or commit SHA. Defaults to the default branch."),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async ({ owner, repo, path, ref }) => {
       assertRepoAllowed(owner, repo, env.ALLOWED_REPOS);
@@ -72,13 +79,20 @@ function createServer(env: Env): McpServer {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "create_branch",
-    "Creates a new branch in a repository, branching off an existing base branch (defaults to the repo's default branch). Use this before committing changes for a PR.",
     {
-      ...repoArgs,
-      newBranch: z.string().describe("Name of the new branch to create, e.g. 'feat/add-cache-layer'"),
-      fromBranch: z.string().optional().describe("Branch to base the new branch on. Defaults to the default branch."),
+      description:
+        "Creates a new branch in a repository, branching off an existing base branch (defaults to the repo's default branch). Use this before committing changes for a PR.",
+      inputSchema: {
+        ...repoArgs,
+        newBranch: z.string().describe("Name of the new branch to create, e.g. 'feat/add-cache-layer'"),
+        fromBranch: z
+          .string()
+          .optional()
+          .describe("Branch to base the new branch on. Defaults to the default branch."),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     },
     async ({ owner, repo, newBranch, fromBranch }) => {
       assertRepoAllowed(owner, repo, env.ALLOWED_REPOS);
@@ -89,22 +103,26 @@ function createServer(env: Env): McpServer {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "commit_files",
-    "Commits one or more file changes (full new content per file) to an existing branch as a single atomic commit. Creates files that don't exist yet, overwrites files that do.",
     {
-      ...repoArgs,
-      branch: z.string().describe("Branch to commit to. Must already exist (use create_branch first)."),
-      message: z.string().describe("Commit message"),
-      files: z
-        .array(
-          z.object({
-            path: z.string().describe("File path relative to repo root"),
-            content: z.string().describe("Full new content of the file"),
-          }),
-        )
-        .min(1)
-        .describe("Files to create or overwrite in this commit"),
+      description:
+        "Commits one or more file changes (full new content per file) to an existing branch as a single atomic commit. Creates files that don't exist yet, overwrites files that do.",
+      inputSchema: {
+        ...repoArgs,
+        branch: z.string().describe("Branch to commit to. Must already exist (use create_branch first)."),
+        message: z.string().describe("Commit message"),
+        files: z
+          .array(
+            z.object({
+              path: z.string().describe("File path relative to repo root"),
+              content: z.string().describe("Full new content of the file"),
+            }),
+          )
+          .min(1)
+          .describe("Files to create or overwrite in this commit"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
     },
     async ({ owner, repo, branch, message, files }) => {
       assertRepoAllowed(owner, repo, env.ALLOWED_REPOS);
@@ -115,15 +133,18 @@ function createServer(env: Env): McpServer {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "create_pull_request",
-    "Opens a pull request from a head branch into a base branch.",
     {
-      ...repoArgs,
-      title: z.string().describe("PR title"),
-      head: z.string().describe("Branch containing the changes (the branch you committed to)"),
-      base: z.string().describe("Branch to merge into, e.g. 'main'"),
-      body: z.string().optional().describe("PR description (markdown supported)"),
+      description: "Opens a pull request from a head branch into a base branch.",
+      inputSchema: {
+        ...repoArgs,
+        title: z.string().describe("PR title"),
+        head: z.string().describe("Branch containing the changes (the branch you committed to)"),
+        base: z.string().describe("Branch to merge into, e.g. 'main'"),
+        body: z.string().optional().describe("PR description (markdown supported)"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
     },
     async ({ owner, repo, title, head, base, body }) => {
       assertRepoAllowed(owner, repo, env.ALLOWED_REPOS);
@@ -134,10 +155,13 @@ function createServer(env: Env): McpServer {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "list_open_pull_requests",
-    "Lists currently open pull requests for a repository.",
-    repoArgs,
+    {
+      description: "Lists currently open pull requests for a repository.",
+      inputSchema: repoArgs,
+      annotations: { readOnlyHint: true, openWorldHint: true },
+    },
     async ({ owner, repo }) => {
       assertRepoAllowed(owner, repo, env.ALLOWED_REPOS);
       const prs = await listOpenPullRequests(octokit, owner, repo);
@@ -151,12 +175,16 @@ function createServer(env: Env): McpServer {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "get_pull_request",
-    "Fetches a pull request's metadata (title, body, state, mergeability) and the per-file diff, so it can be reviewed before merging.",
     {
-      ...repoArgs,
-      pullNumber: z.number().int().describe("Pull request number"),
+      description:
+        "Fetches a pull request's metadata (title, body, state, mergeability) and the per-file diff, so it can be reviewed before merging.",
+      inputSchema: {
+        ...repoArgs,
+        pullNumber: z.number().int().describe("Pull request number"),
+      },
+      annotations: { readOnlyHint: true, openWorldHint: true },
     },
     async ({ owner, repo, pullNumber }) => {
       assertRepoAllowed(owner, repo, env.ALLOWED_REPOS);
@@ -189,18 +217,22 @@ function createServer(env: Env): McpServer {
     },
   );
 
-  server.tool(
+  server.registerTool(
     "merge_pull_request",
-    "Merges a pull request. Returns whether the merge succeeded rather than throwing when GitHub reports the PR isn't mergeable yet (e.g. failing checks or conflicts), so that case can be handled instead of surfacing as a crash.",
     {
-      ...repoArgs,
-      pullNumber: z.number().int().describe("Pull request number to merge"),
-      mergeMethod: z
-        .enum(["merge", "squash", "rebase"])
-        .optional()
-        .describe("Merge strategy. Defaults to 'merge' (a merge commit)."),
-      commitTitle: z.string().optional().describe("Optional custom title for the merge commit"),
-      commitMessage: z.string().optional().describe("Optional custom message for the merge commit"),
+      description:
+        "Merges a pull request. Returns whether the merge succeeded rather than throwing when GitHub reports the PR isn't mergeable yet (e.g. failing checks or conflicts), so that case can be handled instead of surfacing as a crash.",
+      inputSchema: {
+        ...repoArgs,
+        pullNumber: z.number().int().describe("Pull request number to merge"),
+        mergeMethod: z
+          .enum(["merge", "squash", "rebase"])
+          .optional()
+          .describe("Merge strategy. Defaults to 'merge' (a merge commit)."),
+        commitTitle: z.string().optional().describe("Optional custom title for the merge commit"),
+        commitMessage: z.string().optional().describe("Optional custom message for the merge commit"),
+      },
+      annotations: { readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true },
     },
     async ({ owner, repo, pullNumber, mergeMethod, commitTitle, commitMessage }) => {
       assertRepoAllowed(owner, repo, env.ALLOWED_REPOS);
