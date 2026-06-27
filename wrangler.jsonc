@@ -11,6 +11,6 @@
     // Comma-separated allowlist of "owner/repo" this server is allowed to touch.
     // Example: "clemdevlin/file-router,clemdevlin/uploadkit"
     // Required, with no wildcard support on purpose - every repo must be listed explicitly.
-    "ALLOWED_REPOS": "clemdevlin/file-router"
+    "ALLOWED_REPOS": "clemdevlin/file-router,clemdevlin/github-pr-mcp"
   }
 }
