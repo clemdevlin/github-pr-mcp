@@ -13,7 +13,6 @@
     "inspector:build": "tsc src/inspector.ts --outDir dist --moduleResolution node --module commonjs --target es2020 --esModuleInterop && node dist/inspector.js"
   },
   "dependencies": {
-    "@cloudflare/workerd-windows-64": "^1.20260627.1",
     "@modelcontextprotocol/inspector": "^0.22.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@octokit/rest": "^22.0.1",
