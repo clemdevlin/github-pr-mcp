@@ -1,16 +1,24 @@
 {
-  "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "github-pr-mcp",
-  "main": "src/index.ts",
-  "compatibility_date": "2026-06-20",
-  "compatibility_flags": ["nodejs_compat"],
-  "observability": {
-    "enabled": true
-  },
-  "vars": {
-    // Comma-separated allowlist of "owner/repo" this server is allowed to touch.
-    // Example: "clemdevlin/file-router,clemdevlin/uploadkit"
-    // Required, with no wildcard support on purpose - every repo must be listed explicitly.
-    "ALLOWED_REPOS": "clemdevlin/file-router,clemdevlin/github-pr-mcp"
-  }
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "github-pr-mcp",
+	"main": "src/index.ts",
+	"compatibility_date": "2026-06-20",
+	"compatibility_flags": [
+		"nodejs_compat"
+	],
+	"observability": {
+		"enabled": true
+	},
+	// KV namespace for OAuth state, grants, and per-user repo allowlists.
+	// Create it with: npx wrangler kv namespace create OAUTH_KV
+	// then paste the returned id below.
+	"kv_namespaces": [
+		{
+			"binding": "OAUTH_KV",
+			"id": "b4fc5a799a844e3ba14a4df68fce605b"
+		}
+	]
+	// Secrets (never committed):
+	//   GITHUB_CLIENT_ID      - set with: npx wrangler secret put GITHUB_CLIENT_ID
+	//   GITHUB_CLIENT_SECRET  - set with: npx wrangler secret put GITHUB_CLIENT_SECRET
 }

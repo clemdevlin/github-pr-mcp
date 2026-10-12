@@ -1,6 +1,6 @@
 {
   "name": "github-pr-mcp",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,11 +8,14 @@
     "start": "wrangler dev",
     "deploy": "wrangler deploy",
     "cf-typegen": "wrangler types",
-    "secret:put-token": "wrangler secret put GITHUB_TOKEN",
     "inspector": "node --loader ts-node/esm src/inspector.ts",
-    "inspector:build": "tsc src/inspector.ts --outDir dist --moduleResolution node --module commonjs --target es2020 --esModuleInterop && node dist/inspector.js"
+    "inspector:build": "tsc src/inspector.ts --outDir dist --moduleResolution node --module commonjs --target es2020 --esModuleInterop && node dist/inspector.js",
+    "secret:github-client-id": "wrangler secret put GITHUB_CLIENT_ID",
+    "secret:github-client-secret": "wrangler secret put GITHUB_CLIENT_SECRET",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@cloudflare/workers-oauth-provider": "^1.2.3",
     "@modelcontextprotocol/inspector": "^0.22.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
     "@octokit/rest": "^22.0.1",
@@ -23,6 +26,6 @@
     "@types/node": "^26.0.1",
     "ts-node": "^10.9.2",
     "typescript": "^6.0.3",
-    "wrangler": "^4.105.0"
+    "wrangler": "^4.149.0"
   }
 }
