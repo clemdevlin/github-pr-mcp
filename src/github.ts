@@ -10,25 +10,26 @@ export interface FileChange {
 export class RepoNotAllowedError extends Error {
   constructor(repoSlug: string) {
     super(
-      `Repo "${repoSlug}" is not in ALLOWED_REPOS. Add it to wrangler.jsonc and redeploy if this is intentional.`,
+      `Repo "${repoSlug}" is not in your allowed repos. Add it with set_allowed_repos, or clear the restriction by calling set_allowed_repos with an empty list.`,
     );
     this.name = "RepoNotAllowedError";
   }
 }
 
-/** Throws if owner/repo isn't explicitly allowlisted via the ALLOWED_REPOS env var. */
+/**
+ * Throws if the user has set a personal allowlist and the repo isn't on it.
+ * With no allowlist (null), any repo is allowed here; GitHub still checks
+ * whether the user's token can access it.
+ */
 export function assertRepoAllowed(
   owner: string,
   repo: string,
-  allowedReposCsv: string,
+  allowedRepos: string[] | null,
 ): void {
-  const slug = `${owner}/${repo}`;
-  const allowed = allowedReposCsv
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-  if (!allowed.includes(slug)) {
-    throw new RepoNotAllowedError(slug);
+  if (allowedRepos === null) return;
+  const slug = `${owner}/${repo}`.toLowerCase();
+  if (!allowedRepos.some((allowed) => allowed.toLowerCase() === slug)) {
+    throw new RepoNotAllowedError(`${owner}/${repo}`);
   }
 }
 
