@@ -8,8 +8,7 @@
     "start": "wrangler dev",
     "deploy": "wrangler deploy",
     "cf-typegen": "wrangler types",
-    "inspector": "node --loader ts-node/esm src/inspector.ts",
-    "inspector:build": "tsc src/inspector.ts --outDir dist --moduleResolution node --module commonjs --target es2020 --esModuleInterop && node dist/inspector.js",
+    "inspector": "npx @modelcontextprotocol/inspector",
     "secret:github-client-id": "wrangler secret put GITHUB_CLIENT_ID",
     "secret:github-client-secret": "wrangler secret put GITHUB_CLIENT_SECRET",
     "typecheck": "tsc --noEmit"

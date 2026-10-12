@@ -43,7 +43,7 @@ export async function listRepoFiles(
   owner: string,
   repo: string,
   ref?: string,
-): Promise<string[]> {
+): Promise<{ files: string[]; truncated: boolean }> {
   const repoInfo = await octokit.repos.get({ owner, repo });
   const branch = ref ?? repoInfo.data.default_branch;
 
@@ -57,9 +57,14 @@ export async function listRepoFiles(
     recursive: "true",
   });
 
-  return tree.data.tree
-    .filter((entry) => entry.type === "blob" && entry.path)
-    .map((entry) => entry.path as string);
+  // GitHub caps recursive tree responses; when it does, `truncated` is true
+  // and the list is incomplete. Callers must surface that to the user.
+  return {
+    files: tree.data.tree
+      .filter((entry) => entry.type === "blob" && entry.path)
+      .map((entry) => entry.path as string),
+    truncated: tree.data.truncated === true,
+  };
 }
 
 /** Reads a single file's text content at a given ref (default branch if omitted). */
