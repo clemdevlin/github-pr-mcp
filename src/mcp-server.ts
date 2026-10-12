@@ -97,8 +97,11 @@ export function createServer(env: Env, props: Props): McpServer {
     },
     async ({ owner, repo, ref }) => {
       await guard(owner, repo);
-      const files = await listRepoFiles(octokit, owner, repo, ref);
-      return { content: [{ type: "text", text: files.join("\n") }] };
+      const { files, truncated } = await listRepoFiles(octokit, owner, repo, ref);
+      const note = truncated
+        ? "\n\nWarning: GitHub truncated this listing because the repository is very large, so some files are missing. Use read_file with a known path to reach files that aren't shown."
+        : "";
+      return { content: [{ type: "text", text: files.join("\n") + note }] };
     },
   );
 
