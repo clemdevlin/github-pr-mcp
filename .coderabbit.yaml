@@ -1,0 +1,10 @@
+# CodeRabbit review settings.
+# Auto-review runs on every new PR into main. Draft PRs are skipped until
+# they're marked ready for review. Manual trigger: comment
+# "@coderabbitai review" on the PR.
+reviews:
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - main
